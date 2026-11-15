@@ -61,14 +61,78 @@ button.primary { background: var(--fg); color: var(--bg); border-color: var(--fg
 .range-row, .axisbar { display: grid; grid-template-columns: 80px 1fr 80px; align-items: center; gap: 12px; }
 
 /* Live view */
-.sticks { display: flex; justify-content: center; gap: 48px; flex-wrap: wrap; margin-bottom: 24px; }
-.stickbox { margin: 0; text-align: center; }
-.stickbox svg { width: 200px; height: 200px; display: block; }
-.stickbox figcaption { display: flex; flex-direction: column; gap: 2px; margin-top: 8px; font-size: 13px; }
-.stickbox .frame { fill: none; stroke: var(--fg); stroke-width: 1.5; }
-.stickbox .guide { stroke: var(--line); stroke-width: 0.75; }
-.stickbox .shaft { stroke: var(--fg); stroke-width: 2.5; stroke-linecap: round; }
-.stickbox .tip { fill: var(--fg); }
+.radio-figure { margin: 0 auto 8px; max-width: 640px; }
+.radio { display: block; width: 100%; }
+.radio .body { fill: var(--bg); stroke: var(--fg); stroke-width: 3; stroke-linejoin: round; }
+.radio .part { fill: var(--bg); stroke: var(--fg); stroke-width: 2; stroke-linejoin: round; }
+.radio .detail { fill: none; stroke: var(--fg); stroke-width: 1.2; stroke-linecap: round; }
+.radio .dot { fill: var(--fg); }
+.radio .screen { fill: var(--soft); stroke: var(--fg); stroke-width: 1; }
+.radio .gimbal-outer { fill: var(--bg); stroke: var(--fg); stroke-width: 2.5; }
+.radio .gimbal-bg { fill: var(--bg); }
+.radio .gimbal-outer { stroke-width: 3; }
+.radio .gimbal-ring { fill: none; stroke: var(--fg); stroke-width: 1.2; }
+.radio .gimbal-inner { fill: none; stroke: var(--fg); stroke-width: 1.2; }
+/* Plate drawn in grey so zone colours and the stick stay the focus */
+.radio .gimbal-plate { fill: none; stroke: #8f8f8f; stroke-width: 1.1; }
+.radio .gimbal-plate .slot { fill: rgba(255, 255, 255, 0.55); }
+.radio .gimbal-plate .knob { fill: var(--bg); stroke: #6f6f6f; stroke-width: 1.4; }
+.radio .gimbal-plate .knurl { stroke-dasharray: 2 1.6; }
+/* While training, fade the mechanism so zone colours and the stick read first */
+.radio .has-zones .gimbal-plate { opacity: 0.3; }
+.radio .stick-shaft { stroke: var(--fg); stroke-width: 5; stroke-linecap: round; }
+.radio .stick-tip { fill: var(--fg); }
+.radio-caption { display: flex; justify-content: space-around; font-size: 13px; color: var(--muted); margin-top: 4px; }
+.radio .band { stroke: var(--bg); stroke-width: 1.5; transition: fill 120ms; }
+.radio .band.even { fill: #f1f1f1; }
+.radio .band.odd { fill: #e6e6e6; }
+.radio .band.current { fill: #cfcfcf; }
+.radio .band.target { fill: #bfd3fb; }
+.radio .band.hit { fill: #a7e3bd; }
+.radio .band.holding { fill: #d3f1dd; }
+.radio .band-fill { fill: #5cc884; }
+.radio .band.overshoot { fill: #f7b4b4; }
+
+.zone-preview { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 4px 0 20px; }
+.zone-preview select { font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
+.zone-preview .ok { color: var(--ok); font-weight: 600; }
 .bars { display: grid; gap: 10px; max-width: 520px; margin: 0 auto; }
 .axisbar .value { font-variant-numeric: tabular-nums; text-align: right; }
 .live .small { text-align: center; margin-top: 20px; }
+
+/* Dev compare page: drawing in blue so it stands apart from the black reference */
+.compare .radio .body, .compare .radio .part, .compare .radio .gimbal-outer,
+.compare .radio .gimbal-inner, .compare .radio .gimbal-ring, .compare .radio .gimbal-plate,
+.compare .radio .gimbal-plate .knob { stroke: #2563eb; }
+.compare .radio .dot, .compare .radio .stick-tip { fill: #2563eb; }
+.compare .radio .stick-shaft { stroke: #2563eb; }
+.compare .radio-figure { max-width: 900px; }
+
+/* Navigation */
+.tabs { display: flex; gap: 4px; margin-left: auto; margin-right: 12px; }
+.tabs button { border-color: transparent; }
+.tabs button.active { border-color: var(--fg); }
+.ok { color: var(--ok); }
+.bad { color: var(--bad); }
+
+/* Level select */
+.stage { margin-bottom: 28px; }
+.stage h2 { font-size: 18px; margin: 0 0 2px; }
+.stage > p { margin: 0 0 12px; }
+.level-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.level-card { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; padding: 14px 16px; border-radius: 12px; }
+.level-card .level-id { font-size: 12px; color: var(--muted); }
+.stars { letter-spacing: 2px; color: var(--line); font-size: 18px; }
+.stars .on { color: #e6a700; }
+
+/* Play */
+.info-strip { display: flex; align-items: center; gap: 20px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 10px; font-variant-numeric: tabular-nums; }
+.info-strip button { margin-left: auto; padding: 4px 12px; }
+.play-prompt { text-align: center; font-size: 22px; min-height: 32px; margin: 18px 0 4px; }
+
+/* Results */
+.results h2 { margin: 0 0 8px; font-size: 20px; }
+.results .stars { font-size: 32px; }
+.result-grid { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 16px 0; }
+.result-grid dt { color: var(--muted); }
+.result-grid dd { margin: 0; font-variant-numeric: tabular-nums; }

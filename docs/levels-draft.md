@@ -14,7 +14,8 @@
   - Leaving the zone resets the hold timer.
   - A target not hit within its **timeout** (3× the level's time limit, minimum 3 s) is a **miss**.
 - **Time-to-target:** from the target appearing until the hold *starts*. The hold time itself isn't counted.
-- **Overshoot:** the stick goes past the target zone before the hold completes. It's recorded and shown with a red flash, but it doesn't fail the target.
+- **Overshoot:** the stick goes past the target zone before the hold completes. It's recorded and the target band shows red while the stick is past it, but it doesn't fail the target.
+- **Target choice:** a new target is never the zone the stick is already in, and never the same as the previous target.
 - **Isolation band:** in isolation levels, the axes you're *not* meant to move must stay within ±X% of where they started. Leaving it is an **isolation miss**.
 
 ## 2. Pass rules and stars
