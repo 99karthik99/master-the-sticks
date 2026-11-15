@@ -6,18 +6,26 @@ import { Gimbal } from './Gimbal'
 import { LowerControls } from './LowerControls'
 import { Outline } from './Outline'
 
-/** Zone bands drawn inside one gimbal, for the axis being trained. */
-export interface ZoneOverlay {
-  axis: StickAxis
-  count: number
-  /** Zone the user should reach, if any. */
-  target?: number | null
-  /** Zone the stick is in right now. */
-  current?: number | null
-  /** Stick is currently past the target: shown in red. */
-  overshoot?: boolean
-  /** 0..1 progress of the hold while the stick is in the target. */
+type Interval = { lo: number; hi: number }
+
+/**
+ * What to draw over the gimbals while training. Keyed by axis; each gimbal
+ * draws the parts that concern its own two axes.
+ */
+export interface Guide {
+  /** Zone stripes per axis. */
+  divisions?: Partial<Record<StickAxis, number>>
+  /** Target box: the stick must be inside these ranges (missing axis = any). */
+  target?: Partial<Record<StickAxis, Interval>>
+  /** Axes currently past their target: shown in red. */
+  pastAxes?: readonly StickAxis[]
+  /** 0..1 hold progress while the whole target is held. */
   holdProgress?: number
+  /** Ranges the stick must stay inside (isolation). */
+  keep?: Partial<Record<StickAxis, Interval>>
+  /** Moving target for tracking, and its tolerance (normalized units). */
+  ghost?: Partial<Record<StickAxis, number>>
+  ghostTolerance?: number
 }
 
 export type Section = 'outline' | 'gimbals' | 'center' | 'lower'
@@ -25,7 +33,7 @@ export type Section = 'outline' | 'gimbals' | 'center' | 'lower'
 interface Props {
   mode: StickMode
   values: StickValues
-  zones?: ZoneOverlay | null
+  guide?: Guide | null
   /** Sections to draw (default: all). Used by the compare page. */
   sections?: readonly Section[]
   /** Dev only: reference image drawn underneath, for checking proportions. */
@@ -35,7 +43,7 @@ interface Props {
 const ALL: readonly Section[] = ['outline', 'gimbals', 'center', 'lower']
 
 /** Line drawing of the RadioMaster Pocket (front view), with both sticks live. */
-export function RadioDrawing({ mode, values, zones, sections = ALL, underlay }: Props) {
+export function RadioDrawing({ mode, values, guide, sections = ALL, underlay }: Props) {
   const { left, right } = stickLayout(mode)
   const show = (s: Section) => sections.includes(s)
   return (
@@ -46,8 +54,8 @@ export function RadioDrawing({ mode, values, zones, sections = ALL, underlay }: 
         {show('lower') && <LowerControls />}
         {show('gimbals') && (
           <>
-            <Gimbal pos={GIMBAL.left} side={left} values={values} zones={zones} />
-            <Gimbal pos={GIMBAL.right} side={right} values={values} zones={zones} />
+            <Gimbal pos={GIMBAL.left} side={left} values={values} guide={guide} />
+            <Gimbal pos={GIMBAL.right} side={right} values={values} guide={guide} />
           </>
         )}
         {underlay && (

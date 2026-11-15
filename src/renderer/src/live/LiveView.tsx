@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { zoneOf } from '@core/axis'
+import { zoneOf, zoneRange } from '@core/axis'
 import { readSticks, SPRING_CENTERED, STICK_AXES, type RadioProfile, type StickAxis } from '@core/radio'
 import { AxisBar } from '../components/AxisBar'
 import { AXIS_LABEL } from '../components/labels'
-import { RadioDrawing, type ZoneOverlay } from '../components/radio/RadioDrawing'
+import { RadioDrawing, type Guide } from '../components/radio/RadioDrawing'
+import { zoneLabel } from '@core/targets'
 import type { PadSnapshot } from '../radio/useGamepad'
 
 interface Props {
@@ -12,9 +13,9 @@ interface Props {
   onRedoSetup: () => void
 }
 
-const ZONE_COUNTS = [3, 4, 5, 6, 7, 8, 9]
-/** Stage 1 defaults: 4 for throttle, 3 (odd, so there's a center) for the others. */
-const defaultCount = (axis: StickAxis) => (SPRING_CENTERED[axis] ? 3 : 4)
+const ZONE_COUNTS = [3, 4, 5, 6, 7, 8, 9, 10]
+/** Stage 1 defaults: 20% steps for throttle, 3 zones (odd, so there's a center) for the others. */
+const defaultCount = (axis: StickAxis) => (SPRING_CENTERED[axis] ? 3 : 5)
 
 /** Live radio drawing, per-axis bars, and a zone preview to try the colour coding. */
 export function LiveView({ pad, profile, onRedoSetup }: Props) {
@@ -36,13 +37,14 @@ export function LiveView({ pad, profile, onRedoSetup }: Props) {
     setTarget(t)
   }
 
-  const zones: ZoneOverlay | null = axis
-    ? { axis, count, target, current: zoneOf(v[axis], count) }
+  const guide: Guide | null = axis
+    ? { divisions: { [axis]: count }, ...(target !== null ? { target: { [axis]: zoneRange(target, count) } } : {}) }
     : null
+  const inTarget = axis !== null && target !== null && zoneOf(v[axis], count) === target
 
   return (
     <section className="live">
-      <RadioDrawing mode={profile.mode} values={v} zones={zones} />
+      <RadioDrawing mode={profile.mode} values={v} guide={guide} />
 
       <div className="zone-preview">
         <span className="muted">Zone preview</span>
@@ -56,13 +58,13 @@ export function LiveView({ pad, profile, onRedoSetup }: Props) {
           <>
             <select value={count} onChange={(e) => { setCount(+e.target.value); setTarget(null) }}>
               {ZONE_COUNTS.map((n) => (
-                <option key={n} value={n}>{n} zones</option>
+                <option key={n} value={n}>{axis === 'throttle' ? `${+(100 / n).toFixed(1)}% steps` : `${n} zones`}</option>
               ))}
             </select>
             <button onClick={newTarget}>New target</button>
             {target !== null && (
-              <span className={zones?.current === target ? 'ok' : 'muted'}>
-                {zones?.current === target ? 'In the target zone' : `Target: zone ${target + 1} of ${count}`}
+              <span className={inTarget ? 'ok' : 'muted'}>
+                {inTarget ? 'In the target zone' : `Target: ${zoneLabel(axis, target, count).split(' → ')[1]}`}
               </span>
             )}
           </>

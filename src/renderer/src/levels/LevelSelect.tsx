@@ -1,6 +1,6 @@
-import { LEVELS, STAGES } from '@core/levels'
+import { LEVELS, STAGES, levelById } from '@core/levels'
 import { isUnlocked, type Progress } from '@core/scoring'
-import { seconds, StarRow, zonesSummary } from './format'
+import { StarRow } from './format'
 
 interface Props {
   progress: Progress
@@ -24,10 +24,14 @@ export function LevelSelect({ progress, onPlay }: Props) {
                 <button key={level.id} className="level-card" disabled={!open} onClick={() => onPlay(level.id)}>
                   <span className="level-id">{level.id}</span>
                   <b>{level.title}</b>
-                  <span className="muted small">
-                    {zonesSummary(level)} · hold {seconds(level.holdMs)} · under {seconds(level.limitMs)}
-                  </span>
-                  {open ? <StarRow stars={rec?.stars ?? 0} /> : <span className="muted small">🔒 Pass {prevId(level.id)} to unlock</span>}
+                  <span className="muted small">{level.summary}</span>
+                  {!open ? (
+                    <span className="muted small">🔒 Pass {unlockedBy(level.id)} to unlock</span>
+                  ) : level.kind === 'speed' ? (
+                    <span className="small">Best: {rec?.bestSpeed !== undefined ? rec.bestSpeed.toFixed(1) : '—'}</span>
+                  ) : (
+                    <StarRow stars={rec?.stars ?? 0} />
+                  )}
                 </button>
               )
             })}
@@ -38,7 +42,9 @@ export function LevelSelect({ progress, onPlay }: Props) {
   )
 }
 
-const prevId = (id: string) => {
+function unlockedBy(id: string): string {
+  const level = levelById(id)!
+  if (level.unlockAfter) return level.unlockAfter
   const i = LEVELS.findIndex((l) => l.id === id)
-  return LEVELS[i - 1]?.id ?? ''
+  return LEVELS.slice(0, i).reverse().find((l) => l.kind !== 'speed')?.id ?? ''
 }

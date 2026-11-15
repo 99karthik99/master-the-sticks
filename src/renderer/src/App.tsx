@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
-import { levelById, nextLevel } from '@core/levels'
+import { levelById, nextLevel, speedTestGen, timeoutMs, type Level } from '@core/levels'
 import type { RadioProfile } from '@core/radio'
-import { recordAttempt, scoreLevel, type LevelScore, type Progress } from '@core/scoring'
-import type { TargetResult } from '@core/session'
+import { isUnlocked, recordAttempt, scoreSpeed, scoreTargets, scoreTrack, type LevelScore, type Progress } from '@core/scoring'
+import type { SessionConfig, TargetResult } from '@core/session'
+import type { TrackState } from '@core/track'
 import { LevelSelect } from './levels/LevelSelect'
 import { LiveView } from './live/LiveView'
-import { PlayView } from './play/PlayView'
 import { ResultsView } from './play/ResultsView'
+import { TargetPlay } from './play/TargetPlay'
+import { TrackPlay } from './play/TrackPlay'
 import { loadProfile, saveProfile } from './radio/profileStore'
 import { loadProgress, saveProgress } from './radio/progressStore'
 import { useGamepad } from './radio/useGamepad'
@@ -16,7 +18,7 @@ type Screen =
   | { name: 'levels' }
   | { name: 'free' }
   | { name: 'play'; levelId: string; attempt: number }
-  | { name: 'results'; levelId: string; score: LevelScore }
+  | { name: 'results'; levelId: string; score: LevelScore; best?: number }
 
 export function App() {
   const pad = useGamepad()
@@ -40,16 +42,30 @@ export function App() {
 
   const play = (levelId: string) => setScreen({ name: 'play', levelId, attempt: Date.now() })
 
-  const finishLevel = useCallback((levelId: string, results: TargetResult[]) => {
-    const level = levelById(levelId)!
-    const score = scoreLevel(level, results)
+  const finishLevel = useCallback((levelId: string, score: LevelScore) => {
     setProgress((p) => {
+      const best = p[levelId]?.bestSpeed
       const next = recordAttempt(p, levelId, score)
       saveProgress(next)
+      setScreen({ name: 'results', levelId, score, best })
       return next
     })
-    setScreen({ name: 'results', levelId, score })
   }, [])
+
+  const playScreen = (level: Level, attempt: number) => {
+    if (!pad || !profile) return null
+    const quit = () => setScreen({ name: 'levels' })
+    if (level.kind === 'track') {
+      return <TrackPlay key={attempt} pad={pad} profile={profile} level={level} onFinish={(st: TrackState) => finishLevel(level.id, scoreTrack(st))} onQuit={quit} />
+    }
+    const config: SessionConfig =
+      level.kind === 'speed'
+        ? { gen: speedTestGen((id) => isUnlocked(progress, id)), mode: profile.mode, durationMs: level.durationMs, timeoutMs: 4000 }
+        : { gen: level.gen, mode: profile.mode, targetCount: level.targetCount, timeoutMs: timeoutMs(level.limitMs) }
+    const finish = (results: TargetResult[]) =>
+      finishLevel(level.id, level.kind === 'speed' ? scoreSpeed(level, results) : scoreTargets(level, results))
+    return <TargetPlay key={attempt} pad={pad} profile={profile} level={level} config={config} onFinish={finish} onQuit={quit} />
+  }
 
   const ready = pad && profile && !redoing
 
@@ -89,18 +105,12 @@ export function App() {
           onCancel={profile ? () => setRedoing(false) : undefined}
         />
       ) : screen.name === 'play' ? (
-        <PlayView
-          key={screen.attempt}
-          pad={pad}
-          profile={profile}
-          level={levelById(screen.levelId)!}
-          onFinish={(results) => finishLevel(screen.levelId, results)}
-          onQuit={() => setScreen({ name: 'levels' })}
-        />
+        playScreen(levelById(screen.levelId)!, screen.attempt)
       ) : screen.name === 'results' ? (
         <ResultsView
           level={levelById(screen.levelId)!}
           score={screen.score}
+          best={screen.best}
           hasNext={!!nextLevel(screen.levelId)}
           onRetry={() => play(screen.levelId)}
           onNext={() => play(nextLevel(screen.levelId)!.id)}

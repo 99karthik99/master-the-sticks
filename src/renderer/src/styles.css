@@ -91,6 +91,12 @@ button.primary { background: var(--fg); color: var(--bg); border-color: var(--fg
 .radio .band.hit { fill: #a7e3bd; }
 .radio .band.holding { fill: #d3f1dd; }
 .radio .band-fill { fill: #5cc884; }
+/* Second set of stripes in a grid: half strength so the two directions read as a checkerboard */
+.radio .band.cross { opacity: 0.5; }
+/* Isolation: region the other axes must stay in */
+.radio .keep { fill: rgba(230, 167, 0, 0.18); stroke: #c58f00; stroke-width: 1.2; stroke-dasharray: 4 3; }
+/* Tracking target */
+.radio .ghost { fill: rgba(37, 99, 235, 0.18); stroke: var(--target); stroke-width: 2; }
 .radio .band.overshoot { fill: #f7b4b4; }
 
 .zone-preview { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 4px 0 20px; }
@@ -128,7 +134,23 @@ button.primary { background: var(--fg); color: var(--bg); border-color: var(--fg
 /* Play */
 .info-strip { display: flex; align-items: center; gap: 20px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 10px; font-variant-numeric: tabular-nums; }
 .info-strip button { margin-left: auto; padding: 4px 12px; }
-.play-prompt { text-align: center; font-size: 22px; min-height: 32px; margin: 18px 0 4px; }
+/* Instruction card above the radio */
+.instruction {
+  margin: 18px auto 6px; max-width: 640px; min-height: 92px; padding: 14px 24px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  border: 2px solid var(--line); border-radius: 16px; background: var(--soft);
+  text-align: center; transition: background 150ms, border-color 150ms;
+}
+.instruction-main { font-size: 28px; line-height: 1.25; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 14px; }
+.instruction-part { display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; }
+.instruction-arrow { color: var(--muted); }
+.instruction-plus { color: var(--muted); margin-right: 4px; }
+.instruction-goal { padding: 2px 12px; border-radius: 10px; background: var(--target); color: #fff; font-weight: 600; }
+.instruction-note { font-size: 16px; font-weight: 600; color: #a87800; background: rgba(230, 167, 0, 0.14); border: 1px dashed #c58f00; border-radius: 8px; padding: 2px 10px; }
+.instruction.idle { color: var(--muted); }
+.instruction.target { border-color: var(--target); background: #eef3fe; }
+.instruction.ok { border-color: var(--ok); background: #e9f8ef; color: var(--ok); font-weight: 600; }
+.instruction.bad { border-color: var(--bad); background: #fdeeee; color: var(--bad); font-weight: 600; }
 
 /* Results */
 .results h2 { margin: 0 0 8px; font-size: 20px; }

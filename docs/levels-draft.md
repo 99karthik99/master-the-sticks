@@ -1,14 +1,15 @@
-# Level Ladder — v0.2
+# Level Ladder — v0.3
 
-> Status: **stage list agreed** (`qa-claude-asks.md` Q7–Q8). All 9 stages are
-> in v1. The numbers are still starting guesses; we'll tune them in play-testing.
+> Status: **all 9 stages built** (Milestone 4). The numbers are starting
+> guesses; we'll tune them in play-testing. Code: `src/core/levels.ts`.
 
 ## 1. Terms
 
 - **Axis:** throttle (T), yaw (Y), pitch (P), roll (R). Mode 2: left stick = Y (x) + T (y), right stick = R (x) + P (y).
 - **Zones:** an axis's range split into equal bands.
-  - **Throttle** doesn't spring back, so any zone count works (we start at 4).
+  - **Throttle** doesn't spring back, so its zones are shown as **percent ranges** ("Throttle → 20–40%"), in round steps: 20% in Stage 1, 10% in Stage 2.
   - **Yaw, pitch and roll** spring back to center, so they use **odd** counts (3, 5, 7…). That way there's always a true center zone, and finding center is a skill in itself.
+    Their targets are shown as a **direction plus deflection from center**: with 3 zones just "Roll → left / center / right"; with more, "Roll → right 60–100%", "Pitch → back 20–60%", "Yaw → center (±20%)". Pitch up is "forward".
 - **Target:** "move axis X into zone N". It's shown highlighted on the radio drawing.
 - **Hit:** the stick enters the target zone and **stays there for the hold time**.
   - Leaving the zone resets the hold timer.
@@ -36,22 +37,22 @@ Learn where each axis's ranges are. Generous timings.
 
 | Level | Axis | Zones | Hold | Limit |
 |---|---|---|---|---|
-| 1.1 | Throttle | 4 | 300 ms | 2.5 s |
+| 1.1 | Throttle | 20% steps | 300 ms | 2.5 s |
 | 1.2 | Yaw | 3 | 300 ms | 2.5 s |
 | 1.3 | Pitch | 3 | 300 ms | 2.5 s |
 | 1.4 | Roll | 3 | 300 ms | 2.5 s |
-| 1.5 | Mixed (any of the 4) | 4 / 3 | 300 ms | 2.0 s |
+| 1.5 | Mixed (any of the 4) | 20% / 3 | 300 ms | 2.0 s |
 
 ### Stage 2 — Finer zones (single axis)
 More zones, tighter limits, longer holds.
 
 | Level | Axis | Zones | Hold | Limit |
 |---|---|---|---|---|
-| 2.1 | Throttle | 6 | 400 ms | 2.0 s |
+| 2.1 | Throttle | 10% steps | 400 ms | 2.0 s |
 | 2.2 | Yaw / Pitch / Roll (mixed) | 5 | 400 ms | 2.0 s |
-| 2.3 | Throttle | 8 | 500 ms | 1.8 s |
+| 2.3 | Throttle | 10% steps | 500 ms | 1.8 s |
 | 2.4 | Yaw / Pitch / Roll (mixed) | 7 | 500 ms | 1.8 s |
-| 2.5 | All 4 (mixed) | 8 / 7 | 500 ms | 1.5 s |
+| 2.5 | All 4 (mixed) | 10% / 7 | 500 ms | 1.5 s |
 
 ### Stage 3 — Throttle finesse (FPV)
 In FPV, most flying happens in the low-to-mid throttle range, and small throttle changes matter a lot. These levels use a **target band** anywhere between 20% and 70% throttle, instead of fixed zones.
@@ -60,7 +61,7 @@ In FPV, most flying happens in the low-to-mid throttle range, and small throttle
 |---|---|---|---|---|
 | 3.1 | Hit a throttle band | 10% | 1.0 s | 2.0 s |
 | 3.2 | Hit a throttle band | 6% | 1.5 s | 2.0 s |
-| 3.3 | **Hover hold:** stay in a ±3% band | 6% | 3.0 s | 2.0 s |
+| 3.3 | **Hover hold:** stay in a ±3% band (30–60%), 10 targets | 6% | 3.0 s | 2.0 s |
 | 3.4 | **Throttle steps:** band moves up/down by small steps; follow it | 6% | 0.8 s | 1.2 s |
 
 ### Stage 4 — One stick, two axes
@@ -89,13 +90,13 @@ Two targets at once, one per stick. Both must be held together.
 
 | Level | Left stick | Right stick | Hold | Limit |
 |---|---|---|---|---|
-| 6.1 | Throttle 4 zones | Roll or pitch, 3 zones | 500 ms | 2.5 s |
+| 6.1 | Throttle 20% steps | Roll or pitch, 3 zones | 500 ms | 2.5 s |
 | 6.2 | Throttle band 10% | Right 3×3 grid | 700 ms | 2.5 s |
 | 6.3 | Left 3×3 grid | Right 3×3 grid | 700 ms | 2.5 s |
 | 6.4 | Throttle band 6% | Right 5×5 grid | 1.0 s | 2.0 s |
 
 ### Stage 7 — Flick and return (flips and rolls)
-FPV flips and rolls are fast full-stick movements followed by a return to center. Task: reach the far zone (outer 10%) and be back in the center zone within a time window.
+FPV flips and rolls are fast full-stick movements followed by a return to center. Task: reach the far zone (outer 10% of travel) and be back in the center zone (±10%) within a time window. The window starts when the stick **starts moving**, so reaction time doesn't count. Running out of window is a "too slow" miss. The median flick duration must be under the window to pass (stars at 0.8× and 0.6×).
 
 | Level | Task | Window |
 |---|---|---|
@@ -105,7 +106,7 @@ FPV flips and rolls are fast full-stick movements followed by a return to center
 | 7.4 | Mixed flicks, tighter window | 500 ms |
 
 ### Stage 8 — Tracking
-A target moves along a path and the stick must follow it. Scored on the average distance from the target, instead of hits.
+A target ring moves along a path for 30 s and the stick must follow it. A 2.5 s lead-in shows the start position. Scored on **time on target**: every followed axis within 7.5% of travel. Pass at 80%; ★★ at 88%; ★★★ at 95%. The average distance is shown too.
 
 | Level | Path |
 |---|---|
@@ -115,7 +116,7 @@ A target moves along a path and the stick must follow it. Scored on the average 
 | 8.4 | Throttle wave + right stick circle together |
 
 ### Stage 9 — Speed test (always available after Stage 2)
-60 seconds of random targets drawn from the stages you've unlocked. Score = targets per minute × accuracy. Keeps a personal best. This is the "WPM test" equivalent.
+60 seconds of random targets drawn from the unlocked levels of Stages 1–6 (excluding hover hold). Score = hits per minute × accuracy. Keeps a personal best. This is the "WPM test" equivalent. A target is a miss after 4 s.
 
 ## 4. Not decided yet
 - Whether the time limit should depend on how far the stick must travel. A target far from where the stick is now takes longer than a nearby one. This could come later.

@@ -42,3 +42,8 @@ export function zoneOf(value: number, count: number): number {
   const t = (clamp(value, -1, 1) + 1) / 2 // 0..1
   return Math.min(count - 1, Math.floor(t * count))
 }
+
+/** The value range covered by zone `z` of `count` equal zones. */
+export function zoneRange(z: number, count: number): { lo: number; hi: number } {
+  return { lo: -1 + (2 * z) / count, hi: -1 + (2 * (z + 1)) / count }
+}

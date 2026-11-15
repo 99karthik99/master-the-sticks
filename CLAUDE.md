@@ -21,7 +21,9 @@ The radio is read in the renderer through the browser Gamepad API (no native cod
 - `src/renderer/`: React UI.
   - `radio/`: `useGamepad` (reads the first gamepad every animation frame) and profile storage.
   - `setup/`: the setup wizard (mode, axis mapping, range, center).
-  - `levels/`: level select. `play/`: play screen and results.
+  - `levels/`: level select. `play/`: `TargetPlay` (Stages 1–7, speed test), `TrackPlay`
+    (Stage 8), `ResultsView`. In dev, the live session is on `window.__session` / `window.__track`
+    for automated play-tests.
   - `live/`: "Free play" view (radio drawing, per-axis bars, zone preview, redo setup).
   - `components/radio/`: the Pocket line drawing, split by section (`Outline`, `Gimbal`,
     `CenterControls`, `LowerControls`). All positions live in `geometry.ts`, measured from
@@ -32,8 +34,9 @@ The radio is read in the renderer through the browser Gamepad API (no native cod
   imports; every module has a `*.test.ts`. Imported in the UI as `@core/...`.
   - `radio.ts` (profile, layout per mode, `readSticks`), `mapping.ts` (detect the moved axis),
     `calibration.ts` (ranges, steadiness, `buildProfile`), `axis.ts` (normalize, zones),
-    `levels.ts` (level definitions), `session.ts` (per-frame level engine),
-    `scoring.ts` (score, stars, progress, unlocking).
+    `targets.ts` (target model + generators: zones, band, grid, isolation, dual, flick),
+    `levels.ts` (the ladder), `session.ts` (per-frame target engine),
+    `track.ts` (tracking engine and paths), `scoring.ts` (score, stars, progress, unlocking).
 - `build/icon.svg`: app icon source (the Pocket gimbal). `npm run icon` regenerates
   `build/icon.png` and `build/icon.icns` via `tools/build-icon.cjs`.
 - `tools/stick-check.html`: standalone page to inspect a radio's axes in Chrome.

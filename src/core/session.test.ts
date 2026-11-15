@@ -1,115 +1,121 @@
 import { describe, expect, it } from 'vitest'
-import { LEVELS, levelById, timeoutMs } from './levels'
-import { COUNTDOWN_MS, GAP_MS, isPast, pickTarget, startSession, stepSession, type SessionState } from './session'
+import { LEVELS, levelById, timeoutMs, type TargetLevel } from './levels'
 import type { StickValues } from './radio'
+import { COUNTDOWN_MS, startSession, stepSession, type SessionConfig, type SessionState } from './session'
+import { flick, isolation, zones, type TargetGen } from './targets'
 
 const rest: StickValues = { throttle: -1, yaw: 0, pitch: 0, roll: 0 }
-const L11 = levelById('1.1')! // throttle, 4 zones, hold 300 ms, limit 2.5 s
-const fixedRng = (v: number) => () => v
+const mid = (z: number, n: number) => -1 + (2 * z + 1) / n
+const cfg = (gen: TargetGen, over: Partial<SessionConfig> = {}): SessionConfig => ({ gen, mode: 2, targetCount: 20, timeoutMs: 7500, ...over })
 
-/** Value in the middle of zone `z` of `count`. */
-const mid = (z: number, count: number) => -1 + (2 * z + 1) / count
-
-function toFirstTarget(level = L11, values = rest, rng = fixedRng(0)) {
-  let s = startSession(level, 0)
-  s = stepSession(s, values, COUNTDOWN_MS - 1, rng)
+function firstTarget(config: SessionConfig, values = rest) {
+  let s = startSession(config, 0)
+  s = stepSession(s, values, COUNTDOWN_MS - 1, () => 0)
   expect(s.phase).toBe('countdown')
-  s = stepSession(s, values, COUNTDOWN_MS, rng)
+  s = stepSession(s, values, COUNTDOWN_MS, () => 0)
   expect(s.phase).toBe('target')
   return s
 }
+const T0 = COUNTDOWN_MS
 
-describe('pickTarget', () => {
-  it('never picks the zone the stick is already in', () => {
-    for (let i = 0; i < 4; i++) {
-      const t = pickTarget(L11, { ...rest, throttle: mid(i, 4) }, 0, Math.random)
-      expect(t.zone).not.toBe(i)
-    }
-  })
+describe('reach and hold', () => {
+  const config = cfg(zones({ throttle: 4 }, 300))
 
-  it('never repeats the previous target', () => {
-    const t = pickTarget(L11, rest, 0, fixedRng(0), { axis: 'throttle', zone: 1 })
-    expect(t.zone).toBe(2) // zone 0 = current, zone 1 = previous → first option is 2
-  })
-
-  it('picks across all axes in mixed levels', () => {
-    const mixed = levelById('1.5')!
-    const axes = new Set(Array.from({ length: 50 }, (_, i) => pickTarget(mixed, rest, 0, fixedRng(i / 50)).axis))
-    expect(axes).toEqual(new Set(['throttle', 'yaw', 'pitch', 'roll']))
-  })
-})
-
-describe('stepSession', () => {
-  it('counts a hit after holding for the hold time, timing to the start of the hold', () => {
-    let s = toFirstTarget()
-    const t = s.target!
-    const inZone = { ...rest, throttle: mid(t.zone, 4) }
-    s = stepSession(s, inZone, COUNTDOWN_MS + 800)
-    s = stepSession(s, inZone, COUNTDOWN_MS + 800 + 299)
+  it('hits after the hold, timed to the start of the hold', () => {
+    let s = firstTarget(config) // rng 0 → zone 1 (zone 0 is where the stick is)
+    const v = { ...rest, throttle: mid(1, 4) }
+    s = stepSession(s, v, T0 + 800)
+    s = stepSession(s, v, T0 + 1099)
     expect(s.phase).toBe('target')
-    s = stepSession(s, inZone, COUNTDOWN_MS + 800 + 300)
-    expect(s.phase).toBe('gap')
+    s = stepSession(s, v, T0 + 1100)
     expect(s.results[0]).toMatchObject({ hit: true, timeMs: 800, overshoot: false })
   })
 
-  it('resets the hold if the stick leaves the zone', () => {
-    let s = toFirstTarget()
-    const z = s.target!.zone
-    const inZone = { ...rest, throttle: mid(z, 4) }
-    s = stepSession(s, inZone, 2000)
-    s = stepSession(s, rest, 2200) // left the zone
-    s = stepSession(s, inZone, 2400)
-    s = stepSession(s, inZone, 2650)
-    expect(s.phase).toBe('target') // only 250 ms since re-entry
-    s = stepSession(s, inZone, 2700)
-    expect(s.results[0]).toMatchObject({ hit: true, timeMs: 2400 - COUNTDOWN_MS })
-  })
-
-  it('flags overshoot when the stick goes past the target', () => {
-    let s = toFirstTarget() // stick in zone 0, target zone 1 (rng 0)
-    expect(s.target!.zone).toBe(1)
-    s = stepSession(s, { ...rest, throttle: mid(3, 4) }, 2000)
-    expect(s.target!.overshoot).toBe(true)
-  })
-
-  it('records a miss after the timeout', () => {
-    let s = toFirstTarget()
-    s = stepSession(s, rest, COUNTDOWN_MS + timeoutMs(L11) - 1)
+  it('resets the hold when the stick leaves', () => {
+    let s = firstTarget(config)
+    const v = { ...rest, throttle: mid(1, 4) }
+    s = stepSession(s, v, T0 + 500)
+    s = stepSession(s, rest, T0 + 600)
+    s = stepSession(s, v, T0 + 700)
+    s = stepSession(s, v, T0 + 999)
     expect(s.phase).toBe('target')
-    s = stepSession(s, rest, COUNTDOWN_MS + timeoutMs(L11))
-    expect(s.results[0]).toMatchObject({ hit: false, timeMs: null })
+    s = stepSession(s, v, T0 + 1000)
+    expect(s.results[0]).toMatchObject({ hit: true, timeMs: 700 })
   })
 
-  it('finishes after the last target', () => {
-    let s: SessionState = toFirstTarget()
-    let now = COUNTDOWN_MS
-    while (s.phase !== 'done') {
+  it('flags overshoot and times out', () => {
+    let s = firstTarget(config)
+    s = stepSession(s, { ...rest, throttle: mid(3, 4) }, T0 + 100)
+    expect(s.target!.overshoot).toBe(true)
+    s = stepSession(s, rest, T0 + 7500)
+    expect(s.results[0]).toMatchObject({ hit: false, reason: 'timeout', overshoot: true })
+  })
+
+  it('finishes after targetCount', () => {
+    let s: SessionState = firstTarget(config)
+    let now = T0
+    while (s.phase !== 'done' && now < 1e6) {
       now += 10
-      const v = s.target ? { ...rest, throttle: mid(s.target.zone, 4) } : rest
-      s = stepSession(s, v, now, fixedRng(0.5))
-      if (now > 1e6) throw new Error('did not finish')
+      const r = s.target?.spec.steps[0]!.want[0]
+      s = stepSession(s, r ? { ...rest, [r.axis]: (r.lo + r.hi) / 2 } : rest, now)
     }
-    expect(s.results).toHaveLength(L11.targetCount)
+    expect(s.results).toHaveLength(20)
     expect(s.results.every((r) => r.hit)).toBe(true)
-    expect(GAP_MS).toBeGreaterThan(0)
   })
 })
 
-describe('isPast', () => {
-  it('is true only beyond the target, away from the start', () => {
-    expect(isPast(0, 2, 3)).toBe(true)
-    expect(isPast(0, 2, 1)).toBe(false)
-    expect(isPast(3, 1, 0)).toBe(true)
+describe('isolation', () => {
+  it('misses as soon as a kept axis leaves its band', () => {
+    let s = firstTarget(cfg(isolation(['yaw'], ['throttle'], 5, 8, 400)))
+    s = stepSession(s, { ...rest, yaw: 0.5, throttle: -0.7 }, T0 + 200)
+    expect(s.results[0]).toMatchObject({ hit: false, reason: 'keep' })
+  })
+})
+
+describe('flick', () => {
+  const config = cfg(flick(['roll'], 800)) // rng 0 → roll, right
+
+  it('hits when out and back within the window, timed from first movement', () => {
+    let s = firstTarget(config)
+    s = stepSession(s, rest, T0 + 300) // reaction time, not counted
+    s = stepSession(s, { ...rest, roll: 0.5 }, T0 + 350) // moved
+    s = stepSession(s, { ...rest, roll: 0.95 }, T0 + 450) // far edge
+    s = stepSession(s, { ...rest, roll: 0.1 }, T0 + 700) // back in center
+    expect(s.results[0]).toMatchObject({ hit: true, timeMs: 350 })
+  })
+
+  it('misses as "slow" once the window runs out', () => {
+    let s = firstTarget(config)
+    s = stepSession(s, { ...rest, roll: 0.5 }, T0 + 100)
+    s = stepSession(s, { ...rest, roll: 0.95 }, T0 + 400)
+    s = stepSession(s, { ...rest, roll: 0.95 }, T0 + 901)
+    expect(s.results[0]).toMatchObject({ hit: false, reason: 'slow' })
+  })
+})
+
+describe('speed test (duration)', () => {
+  it('ends when time is up, discarding the open target', () => {
+    let s = firstTarget(cfg(zones({ throttle: 4 }, 300), { targetCount: undefined, durationMs: 60000 }))
+    s = stepSession(s, rest, T0 + 60000)
+    expect(s.phase).toBe('done')
+    expect(s.results).toHaveLength(0)
   })
 })
 
 describe('LEVELS', () => {
-  it('have unique ids and odd zone counts on centered axes', () => {
+  it('have unique ids, odd zone counts on centered axes, sane limits', () => {
     expect(new Set(LEVELS.map((l) => l.id)).size).toBe(LEVELS.length)
-    for (const l of LEVELS) {
-      for (const [axis, n] of Object.entries(l.zones)) {
-        if (axis !== 'throttle') expect(n! % 2).toBe(1)
-      }
+    for (const l of LEVELS.filter((x): x is TargetLevel => x.kind === 'target')) {
+      expect(timeoutMs(l.limitMs)).toBeGreaterThanOrEqual(3000)
+      const t = l.gen({ values: rest, mode: 2, rng: Math.random })
+      for (const [axis, n] of Object.entries(t.divisions)) if (axis !== 'throttle') expect(n! % 2).toBe(1)
     }
+    expect(levelById('9.1')?.unlockAfter).toBe('2.5')
+  })
+
+  it('every target level generates targets in both modes without throwing', () => {
+    for (const l of LEVELS.filter((x): x is TargetLevel => x.kind === 'target'))
+      for (const mode of [1, 2] as const)
+        for (let i = 0; i < 30; i++) expect(l.gen({ values: rest, mode, rng: Math.random }).steps.length).toBeGreaterThan(0)
   })
 })
