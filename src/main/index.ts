@@ -1,6 +1,10 @@
 import { join } from 'node:path'
 import { app, BrowserWindow, shell } from 'electron'
 
+// App icon (build/icon.png). Packaged builds take theirs from build/icon.icns;
+// in development this sets the Dock (macOS) and window (Windows/Linux) icon.
+const ICON_PATH = join(app.getAppPath(), 'build', 'icon.png')
+
 function createWindow(): void {
   const win = new BrowserWindow({
     width: 1100,
@@ -10,6 +14,7 @@ function createWindow(): void {
     show: false,
     backgroundColor: '#ffffff',
     title: 'Master the Sticks',
+    icon: ICON_PATH,
     // No preload: the radio is read in the page via the Gamepad API,
     // which needs no Node access.
     webPreferences: {
@@ -36,6 +41,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  if (process.platform === 'darwin' && !app.isPackaged) app.dock?.setIcon(ICON_PATH)
   createWindow()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

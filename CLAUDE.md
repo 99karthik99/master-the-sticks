@@ -34,6 +34,8 @@ The radio is read in the renderer through the browser Gamepad API (no native cod
     `calibration.ts` (ranges, steadiness, `buildProfile`), `axis.ts` (normalize, zones),
     `levels.ts` (level definitions), `session.ts` (per-frame level engine),
     `scoring.ts` (score, stars, progress, unlocking).
+- `build/icon.svg`: app icon source (the Pocket gimbal). `npm run icon` regenerates
+  `build/icon.png` and `build/icon.icns` via `tools/build-icon.cjs`.
 - `tools/stick-check.html`: standalone page to inspect a radio's axes in Chrome.
 
 ## Commands
