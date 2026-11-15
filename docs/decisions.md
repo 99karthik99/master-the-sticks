@@ -15,3 +15,5 @@ One line per decision, newest last. Details live in `requirement.md`, `docs/` an
 | D9 | 2026-11-15 | Per-user calibration step (min/center/max per axis); centered axes scale each half separately | Real Pocket readings stop short of ±1 and rest slightly off 0 | qa-claude-asks Q9 |
 | D10 | 2026-11-15 | Read input once per animation frame (~60 Hz) | Pocket updates at least as fast as the 60 Hz screen limit; 16 ms timing is fine for every level | qa-claude-asks Q10 |
 | D11 | 2026-11-15 | Pure game logic in `src/core` with no UI/Electron imports | Unit-testable and keeps the rules separate from drawing | Project setup |
+| D12 | 2026-11-15 | Setup flow: choose mode → push each axis up/right to map it (direction sets inversion) → sweep full range → let go to capture center | Works for any radio and channel order; no hand-entered numbers | Milestone 1 |
+| D13 | 2026-11-15 | Radio profile saved per gamepad id in the app's localStorage | Survives restarts with no file handling; a different radio gets its own setup | Milestone 1 |

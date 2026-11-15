@@ -26,6 +26,14 @@ that build precision and speed.
   Support Mode 1 as well if it adds little complexity (e.g. through an
   axis-mapping step during setup).
 
+### R2a. Radio setup
+- First time a radio is connected, a short setup runs:
+  1. Choose stick mode (Mode 2 default, Mode 1).
+  2. Map the sticks: push each one fully up / right when asked.
+  3. Move both sticks through their full range.
+  4. Let go so the centers are recorded.
+- The setup is saved per radio and can be redone at any time.
+
 ### R3. Levels
 - Training is organized into a **fixed ladder** of levels: levels unlock in
   order.

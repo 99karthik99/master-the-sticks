@@ -19,8 +19,13 @@ The radio is read in the renderer through the browser Gamepad API (no native cod
 ## Layout
 - `src/main/`: Electron main process (window only).
 - `src/renderer/`: React UI.
+  - `radio/`: `useGamepad` (reads the first gamepad every animation frame) and profile storage.
+  - `setup/`: the setup wizard (mode, axis mapping, range, center).
+  - `live/`: live view of all four sticks.
 - `src/core/`: pure game logic (calibration, zones, scoring). No React/DOM/Electron/Node
   imports; every module has a `*.test.ts`. Imported in the UI as `@core/...`.
+  - `radio.ts` (profile, layout per mode, `readSticks`), `mapping.ts` (detect the moved axis),
+    `calibration.ts` (ranges, steadiness, `buildProfile`), `axis.ts` (normalize, zones).
 - `tools/stick-check.html`: standalone page to inspect a radio's axes in Chrome.
 
 ## Commands
@@ -28,3 +33,8 @@ The radio is read in the renderer through the browser Gamepad API (no native cod
 - `npm test`: unit tests.
 - `npm run typecheck`: type-check everything.
 - `npm run build`: production build into `out/`.
+
+## Testing UI without the radio
+In a browser at the dev server URL, replace `navigator.getGamepads` with a function
+returning a mock `{ id, connected: true, axes: [...] }` and change its `axes` to simulate sticks.
+
