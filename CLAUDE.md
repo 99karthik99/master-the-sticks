@@ -49,6 +49,10 @@ The radio is read in the renderer through the browser Gamepad API (no native cod
 - `npm test`: unit tests.
 - `npm run typecheck`: type-check everything.
 - `npm run build`: production build into `out/`.
+- `npm run dist:mac`: build + package `release/Master-the-Sticks-<version>-arm64.dmg`
+  (electron-builder, config in `package.json` → `build`). Ad-hoc signed (`identity: "-"`),
+  not notarized: no Apple Developer account yet. Leaving it unsigned breaks the arm64
+  signature and the app won't launch.
 
 ## Testing UI without the radio
 In a browser at the dev server URL, replace `navigator.getGamepads` with a function
