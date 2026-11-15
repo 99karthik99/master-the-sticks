@@ -4,6 +4,7 @@ import { readSticks, type RadioProfile } from '@core/radio'
 import { startTrack, stepTrack, trackError, trackTargets, type TrackState } from '@core/track'
 import { RadioDrawing } from '../components/radio/RadioDrawing'
 import { InstructionCard } from './InstructionCard'
+import { playGo } from '../audio/sounds'
 import type { PadSnapshot } from '../radio/useGamepad'
 
 interface Props {
@@ -30,6 +31,11 @@ export function TrackPlay({ pad, profile, level, onFinish, onQuit }: Props) {
       onFinish(state)
     }
   }, [state, onFinish])
+
+  const running = state.phase === 'running'
+  useEffect(() => {
+    if (running) playGo()
+  }, [running])
 
   // Dev only: lets automated play-tests read the moving target.
   if (import.meta.env.DEV) (window as unknown as { __track?: unknown }).__track = { state, targets: trackTargets(state, pad.t) }

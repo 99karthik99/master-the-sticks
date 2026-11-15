@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, nativeTheme, shell } from 'electron'
 
 // App icon (build/icon.png). Packaged builds take theirs from build/icon.icns;
 // in development this sets the Dock (macOS) and window (Windows/Linux) icon.
@@ -12,7 +12,7 @@ function createWindow(): void {
     minWidth: 800,
     minHeight: 600,
     show: false,
-    backgroundColor: '#ffffff',
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#141414' : '#ffffff',
     title: 'Master the Sticks',
     icon: ICON_PATH,
     // No preload: the radio is read in the page via the Gamepad API,
@@ -21,6 +21,8 @@ function createWindow(): void {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      // Sound effects play in response to stick input, which isn't a "user gesture".
+      autoplayPolicy: 'no-user-gesture-required',
     },
   })
 

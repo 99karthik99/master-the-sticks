@@ -13,6 +13,8 @@ import { loadProfile, saveProfile } from './radio/profileStore'
 import { loadProgress, saveProgress } from './radio/progressStore'
 import { useGamepad } from './radio/useGamepad'
 import { SetupWizard } from './setup/SetupWizard'
+import { HeaderToggles } from './settings/HeaderToggles'
+import { playFail, playPass } from './audio/sounds'
 
 type Screen =
   | { name: 'levels' }
@@ -43,6 +45,8 @@ export function App() {
   const play = (levelId: string) => setScreen({ name: 'play', levelId, attempt: Date.now() })
 
   const finishLevel = useCallback((levelId: string, score: LevelScore) => {
+    if (score.passed) playPass()
+    else playFail()
     setProgress((p) => {
       const best = p[levelId]?.bestSpeed
       const next = recordAttempt(p, levelId, score)
@@ -83,7 +87,10 @@ export function App() {
             </button>
           </nav>
         )}
-        <span className={`pill ${pad ? 'ok' : 'warn'}`}>{pad ? pad.id.replace(/\s*\(Vendor.*\)$/, '') : 'No radio'}</span>
+        <div className="head-right">
+          <span className={`pill ${pad ? 'ok' : 'warn'}`}>{pad ? pad.id.replace(/\s*\(Vendor.*\)$/, '') : 'No radio'}</span>
+          <HeaderToggles />
+        </div>
       </header>
 
       {!pad ? (

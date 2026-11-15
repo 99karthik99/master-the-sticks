@@ -120,4 +120,3 @@ A target ring moves along a path for 30 s and the stick must follow it. A 2.5 s 
 
 ## 4. Not decided yet
 - Whether the time limit should depend on how far the stick must travel. A target far from where the stick is now takes longer than a nearby one. This could come later.
-- Sound feedback (tick on hit, buzz on miss).

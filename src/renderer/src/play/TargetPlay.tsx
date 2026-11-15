@@ -4,6 +4,7 @@ import { readSticks, type RadioProfile, type StickAxis } from '@core/radio'
 import { pastAxes, startSession, stepSession, type SessionConfig, type SessionState, type TargetResult } from '@core/session'
 import { RadioDrawing, type Guide } from '../components/radio/RadioDrawing'
 import { InstructionCard } from './InstructionCard'
+import { playGo, playHit, playMiss } from '../audio/sounds'
 import { seconds } from '../levels/format'
 import type { PadSnapshot } from '../radio/useGamepad'
 
@@ -32,6 +33,17 @@ export function TargetPlay({ pad, profile, level, config, onFinish, onQuit }: Pr
   useEffect(() => {
     setSession((s) => stepSession(s, values, pad.t))
   }, [pad.t])
+
+  // Sounds: a blip when targets start, then a tick or buzz for each result.
+  const started = session.startedAt !== null
+  useEffect(() => {
+    if (started) playGo()
+  }, [started])
+  const resultCount = session.results.length
+  useEffect(() => {
+    const last = session.results[resultCount - 1]
+    if (last) (last.hit ? playHit : playMiss)()
+  }, [resultCount])
 
   // Dev only: lets automated play-tests read the current target.
   if (import.meta.env.DEV) (window as unknown as { __session?: SessionState }).__session = session

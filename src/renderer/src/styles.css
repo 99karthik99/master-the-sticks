@@ -8,10 +8,66 @@
   --ok: #16a34a;
   --warn: #b45309;
   --bad: #dc2626;
+  /* Drawing */
+  --plate: #8f8f8f;
+  --plate-strong: #6f6f6f;
+  --slot: rgba(255, 255, 255, 0.55);
+  --band-even: #f1f1f1;
+  --band-odd: #e6e6e6;
+  --band-current: #cfcfcf;
+  --band-target: #bfd3fb;
+  --band-hit: #a7e3bd;
+  --band-holding: #d3f1dd;
+  --band-fill: #5cc884;
+  --band-overshoot: #f7b4b4;
+  --keep-fill: rgba(230, 167, 0, 0.18);
+  --keep-line: #c58f00;
+  --ghost-fill: rgba(37, 99, 235, 0.18);
+  /* Instruction card, stars */
+  --card-target: #eef3fe;
+  --card-ok: #e9f8ef;
+  --card-bad: #fdeeee;
+  --note: #a87800;
+  --note-bg: rgba(230, 167, 0, 0.14);
+  --star: #e6a700;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 15px;
   color: var(--fg);
   background: var(--bg);
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --bg: #141414;
+  --fg: #ececec;
+  --muted: #9a9a9a;
+  --line: #3a3a3a;
+  --soft: #1f1f1f;
+  --target: #5b8ef5;
+  --ok: #34c46f;
+  --warn: #e0a020;
+  --bad: #f05a57;
+  --plate: #6c6c6c;
+  --plate-strong: #8a8a8a;
+  --slot: rgba(20, 20, 20, 0.55);
+  --band-even: #202020;
+  --band-odd: #292929;
+  --band-current: #3d3d3d;
+  --band-target: #26407a;
+  --band-hit: #1f6b40;
+  --band-holding: #1b3d29;
+  --band-fill: #34c46f;
+  --band-overshoot: #7a2a28;
+  --keep-fill: rgba(224, 160, 32, 0.16);
+  --keep-line: #e0a020;
+  --ghost-fill: rgba(91, 142, 245, 0.22);
+  --card-target: #1a2540;
+  --card-ok: #14291c;
+  --card-bad: #2e1716;
+  --note: #e8b84a;
+  --note-bg: rgba(224, 160, 32, 0.12);
+  --star: #f0b400;
+  color-scheme: dark;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); }
@@ -27,7 +83,7 @@ button.primary { background: var(--fg); color: var(--bg); border-color: var(--fg
 
 .app { max-width: 820px; margin: 0 auto; padding: 32px 24px 48px; }
 .app-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
-.app-head h1 { font-size: 24px; margin: 0; }
+.app-head h1 { font-size: 24px; margin: 0 auto 0 0; }
 .pill { font-size: 13px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); }
 .pill.ok { border-color: var(--ok); color: var(--ok); }
 .pill.warn { border-color: var(--warn); color: var(--warn); }
@@ -74,9 +130,9 @@ button.primary { background: var(--fg); color: var(--bg); border-color: var(--fg
 .radio .gimbal-ring { fill: none; stroke: var(--fg); stroke-width: 1.2; }
 .radio .gimbal-inner { fill: none; stroke: var(--fg); stroke-width: 1.2; }
 /* Plate drawn in grey so zone colours and the stick stay the focus */
-.radio .gimbal-plate { fill: none; stroke: #8f8f8f; stroke-width: 1.1; }
-.radio .gimbal-plate .slot { fill: rgba(255, 255, 255, 0.55); }
-.radio .gimbal-plate .knob { fill: var(--bg); stroke: #6f6f6f; stroke-width: 1.4; }
+.radio .gimbal-plate { fill: none; stroke: var(--plate); stroke-width: 1.1; }
+.radio .gimbal-plate .slot { fill: var(--slot); }
+.radio .gimbal-plate .knob { fill: var(--bg); stroke: var(--plate-strong); stroke-width: 1.4; }
 .radio .gimbal-plate .knurl { stroke-dasharray: 2 1.6; }
 /* While training, fade the mechanism so zone colours and the stick read first */
 .radio .has-zones .gimbal-plate { opacity: 0.3; }
@@ -84,20 +140,20 @@ button.primary { background: var(--fg); color: var(--bg); border-color: var(--fg
 .radio .stick-tip { fill: var(--fg); }
 .radio-caption { display: flex; justify-content: space-around; font-size: 13px; color: var(--muted); margin-top: 4px; }
 .radio .band { stroke: var(--bg); stroke-width: 1.5; transition: fill 120ms; }
-.radio .band.even { fill: #f1f1f1; }
-.radio .band.odd { fill: #e6e6e6; }
-.radio .band.current { fill: #cfcfcf; }
-.radio .band.target { fill: #bfd3fb; }
-.radio .band.hit { fill: #a7e3bd; }
-.radio .band.holding { fill: #d3f1dd; }
-.radio .band-fill { fill: #5cc884; }
+.radio .band.even { fill: var(--band-even); }
+.radio .band.odd { fill: var(--band-odd); }
+.radio .band.current { fill: var(--band-current); }
+.radio .band.target { fill: var(--band-target); }
+.radio .band.hit { fill: var(--band-hit); }
+.radio .band.holding { fill: var(--band-holding); }
+.radio .band-fill { fill: var(--band-fill); }
 /* Second set of stripes in a grid: half strength so the two directions read as a checkerboard */
 .radio .band.cross { opacity: 0.5; }
 /* Isolation: region the other axes must stay in */
-.radio .keep { fill: rgba(230, 167, 0, 0.18); stroke: #c58f00; stroke-width: 1.2; stroke-dasharray: 4 3; }
+.radio .keep { fill: var(--keep-fill); stroke: var(--keep-line); stroke-width: 1.2; stroke-dasharray: 4 3; }
 /* Tracking target */
-.radio .ghost { fill: rgba(37, 99, 235, 0.18); stroke: var(--target); stroke-width: 2; }
-.radio .band.overshoot { fill: #f7b4b4; }
+.radio .ghost { fill: var(--ghost-fill); stroke: var(--target); stroke-width: 2; }
+.radio .band.overshoot { fill: var(--band-overshoot); }
 
 .zone-preview { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 4px 0 20px; }
 .zone-preview select { font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
@@ -115,7 +171,7 @@ button.primary { background: var(--fg); color: var(--bg); border-color: var(--fg
 .compare .radio-figure { max-width: 900px; }
 
 /* Navigation */
-.tabs { display: flex; gap: 4px; margin-left: auto; margin-right: 12px; }
+.tabs { display: flex; gap: 4px; margin-right: 12px; }
 .tabs button { border-color: transparent; }
 .tabs button.active { border-color: var(--fg); }
 .ok { color: var(--ok); }
@@ -129,7 +185,7 @@ button.primary { background: var(--fg); color: var(--bg); border-color: var(--fg
 .level-card { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; padding: 14px 16px; border-radius: 12px; }
 .level-card .level-id { font-size: 12px; color: var(--muted); }
 .stars { letter-spacing: 2px; color: var(--line); font-size: 18px; }
-.stars .on { color: #e6a700; }
+.stars .on { color: var(--star); }
 
 /* Play */
 .info-strip { display: flex; align-items: center; gap: 20px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 10px; font-variant-numeric: tabular-nums; }
@@ -146,11 +202,11 @@ button.primary { background: var(--fg); color: var(--bg); border-color: var(--fg
 .instruction-arrow { color: var(--muted); }
 .instruction-plus { color: var(--muted); margin-right: 4px; }
 .instruction-goal { padding: 2px 12px; border-radius: 10px; background: var(--target); color: #fff; font-weight: 600; }
-.instruction-note { font-size: 16px; font-weight: 600; color: #a87800; background: rgba(230, 167, 0, 0.14); border: 1px dashed #c58f00; border-radius: 8px; padding: 2px 10px; }
+.instruction-note { font-size: 16px; font-weight: 600; color: var(--note); background: var(--note-bg); border: 1px dashed var(--keep-line); border-radius: 8px; padding: 2px 10px; }
 .instruction.idle { color: var(--muted); }
-.instruction.target { border-color: var(--target); background: #eef3fe; }
-.instruction.ok { border-color: var(--ok); background: #e9f8ef; color: var(--ok); font-weight: 600; }
-.instruction.bad { border-color: var(--bad); background: #fdeeee; color: var(--bad); font-weight: 600; }
+.instruction.target { border-color: var(--target); background: var(--card-target); }
+.instruction.ok { border-color: var(--ok); background: var(--card-ok); color: var(--ok); font-weight: 600; }
+.instruction.bad { border-color: var(--bad); background: var(--card-bad); color: var(--bad); font-weight: 600; }
 
 /* Results */
 .results h2 { margin: 0 0 8px; font-size: 20px; }
@@ -158,3 +214,10 @@ button.primary { background: var(--fg); color: var(--bg); border-color: var(--fg
 .result-grid { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 16px 0; }
 .result-grid dt { color: var(--muted); }
 .result-grid dd { margin: 0; font-variant-numeric: tabular-nums; }
+
+/* Top-right toggles */
+.head-right { display: flex; align-items: center; gap: 8px; }
+.icon-btn { width: 34px; height: 34px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 9px; }
+.icon-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.icon-btn.off { color: var(--muted); }
+body { transition: background 150ms; }

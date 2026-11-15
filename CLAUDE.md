@@ -25,6 +25,9 @@ The radio is read in the renderer through the browser Gamepad API (no native cod
     (Stage 8), `ResultsView`. In dev, the live session is on `window.__session` / `window.__track`
     for automated play-tests.
   - `live/`: "Free play" view (radio drawing, per-axis bars, zone preview, redo setup).
+  - `settings/`: theme + sound preferences store and the top-right toggles. `audio/sounds.ts`:
+    synthesized sound effects (no-ops while sound is off).
+  - Colours are CSS tokens in `styles.css` (`:root` and `:root[data-theme='dark']`) — never hard-code one.
   - `components/radio/`: the Pocket line drawing, split by section (`Outline`, `Gimbal`,
     `CenterControls`, `LowerControls`). All positions live in `geometry.ts`, measured from
     the Pocket front-view diagram (mapping documented at the top of that file).
