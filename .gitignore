@@ -1,0 +1,17 @@
+# Owner/Claude working notes (kept out of git)
+qa-human-asks.md
+qa-claude-asks.md
+
+# Dependencies and build output
+node_modules/
+out/
+dist/
+release/
+coverage/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.log
+*.tsbuildinfo

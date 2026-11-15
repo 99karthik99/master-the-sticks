@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stick Check</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #111111; --muted: #6b6b6b; --line: #d9d9d9;
+    --bar: #2f6fed; --hot: #16a34a; --warn: #b45309; --panel: #f6f6f6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #121212; --fg: #f1f1f1; --muted: #9a9a9a; --line: #333;
+            --bar: #5b8cff; --hot: #22c55e; --warn: #f59e0b; --panel: #1c1c1c; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+         font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  main { max-width: 900px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 28px 0 10px; }
+  .muted { color: var(--muted); }
+  .status { padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px;
+            background: var(--panel); margin: 16px 0; }
+  .status.ok { border-color: var(--hot); }
+  .status.warn { border-color: var(--warn); }
+  select, button { font: inherit; padding: 6px 10px; border-radius: 6px;
+                   border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
+  button { cursor: pointer; }
+  button:hover { border-color: var(--fg); }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .last { font-size: 18px; font-weight: 600; margin: 8px 0; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  th { font-weight: 600; color: var(--muted); font-size: 12px; }
+  tr.active td { background: color-mix(in srgb, var(--hot) 15%, transparent); }
+  .barwrap { position: relative; height: 10px; background: var(--panel);
+             border: 1px solid var(--line); border-radius: 5px; min-width: 120px; }
+  .barfill { position: absolute; top: 0; bottom: 0; background: var(--bar); border-radius: 5px; }
+  .barmid { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--muted); }
+  .sticks { display: flex; gap: 32px; flex-wrap: wrap; }
+  .stick { text-align: center; }
+  .stick svg { width: 180px; height: 180px; display: block; }
+  .stick .map { margin-top: 8px; display: grid; grid-template-columns: auto auto; gap: 4px 8px;
+                justify-content: center; align-items: center; font-size: 12px; }
+  .buttons span { display: inline-block; min-width: 28px; padding: 2px 6px; margin: 2px;
+                  border: 1px solid var(--line); border-radius: 4px; text-align: center; }
+  .buttons span.on { background: var(--hot); color: #fff; border-color: var(--hot); }
+  code { background: var(--panel); padding: 1px 4px; border-radius: 4px; }
+  ol { padding-left: 20px; }
+  @media (max-width: 600px) { .hide-sm { display: none; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Stick Check</h1>
+  <p class="muted">Checks that your radio is readable as a USB joystick, and shows which axis each stick drives.</p>
+
+  <ol class="muted">
+    <li>Plug in the RadioMaster Pocket and choose <b>USB Joystick (HID)</b> on the radio.</li>
+    <li>Open this page in <b>Chrome</b> and click on it once.</li>
+    <li>Move a stick or flip a switch. Chrome only shows a controller after it has been used.</li>
+  </ol>
+
+  <div id="status" class="status warn">Waiting for a controller… move a stick or flip a switch.</div>
+
+  <div class="row" id="pickerRow" hidden>
+    <label for="picker">Controller:</label>
+    <select id="picker"></select>
+  </div>
+
+  <section id="live" hidden>
+    <div class="last" id="lastMoved">Last moved: —</div>
+    <div class="row">
+      <button id="resetBtn">Reset min/max</button>
+      <button id="centerBtn">Capture center (let sticks go)</button>
+      <button id="copyBtn">Copy report</button>
+      <span id="copyMsg" class="muted"></span>
+    </div>
+
+    <h2>Axes</h2>
+    <table>
+      <thead><tr>
+        <th>Axis</th><th>Value</th><th class="hide-sm">Bar</th>
+        <th>Min</th><th>Center</th><th>Max</th>
+      </tr></thead>
+      <tbody id="axes"></tbody>
+    </table>
+
+    <h2>Stick preview</h2>
+    <p class="muted">Pick which axis drives each direction. In Mode 2, the left stick is yaw (X) and throttle (Y), and the right stick is roll (X) and pitch (Y).</p>
+    <div class="sticks" id="sticks"></div>
+
+    <h2>Buttons / switches</h2>
+    <div class="buttons" id="buttons"></div>
+
+    <h2>Info</h2>
+    <div id="info" class="muted"></div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const state = {
+    index: null,           // selected gamepad index
+    stats: [],             // per axis {min, max, center}
+    prev: [],              // previous axis values
+    lastMoved: null, lastMovedAt: 0,
+    updates: 0, lastTs: 0, rate: 0, rateWindowStart: performance.now(),
+    sticks: [
+      { name: 'Left stick', x: 3, y: 2, invY: false },
+      { name: 'Right stick', x: 0, y: 1, invY: false },
+    ],
+  };
+
+  if (!window.isSecureContext || !navigator.getGamepads) {
+    $('status').textContent = 'This browser does not expose the Gamepad API here. Open the page in Chrome.';
+    return;
+  }
+
+  const pads = () => [...navigator.getGamepads()].filter(Boolean);
+
+  function refreshPicker() {
+    const list = pads();
+    const picker = $('picker');
+    picker.innerHTML = '';
+    list.forEach((p) => {
+      const o = document.createElement('option');
+      o.value = p.index;
+      o.textContent = `#${p.index}: ${p.id}`;
+      picker.appendChild(o);
+    });
+    $('pickerRow').hidden = list.length < 2;
+    if (list.length && (state.index === null || !list.some((p) => p.index === state.index))) {
+      select(list[0].index);
+    }
+    if (!list.length) {
+      state.index = null;
+      $('live').hidden = true;
+      $('status').className = 'status warn';
+      $('status').textContent = 'Waiting for a controller… move a stick or flip a switch.';
+    }
+    picker.value = state.index ?? '';
+  }
+
+  function select(index) {
+    state.index = index;
+    state.stats = []; state.prev = []; state.lastMoved = null;
+    const p = navigator.getGamepads()[index];
+    if (!p) return;
+    $('status').className = 'status ok';
+    $('status').innerHTML = `Connected: <b>${escapeHtml(p.id)}</b> — ${p.axes.length} axes, ${p.buttons.length} buttons.`;
+    $('live').hidden = false;
+    buildAxes(p);
+    buildSticks(p);
+    buildButtons(p);
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function buildAxes(p) {
+    const body = $('axes');
+    body.innerHTML = '';
+    p.axes.forEach((v, i) => {
+      state.stats[i] = { min: v, max: v, center: v };
+      state.prev[i] = v;
+      const tr = document.createElement('tr');
+      tr.id = `ax${i}`;
+      tr.innerHTML = `<td>${i}</td><td class="v"></td>
+        <td class="hide-sm"><div class="barwrap"><div class="barmid"></div><div class="barfill"></div></div></td>
+        <td class="mn"></td><td class="ct"></td><td class="mx"></td>`;
+      body.appendChild(tr);
+    });
+  }
+
+  function axisOptions(n, sel) {
+    let h = '';
+    for (let i = 0; i < n; i++) h += `<option value="${i}" ${i === sel ? 'selected' : ''}>Axis ${i}</option>`;
+    return h;
+  }
+
+  function buildSticks(p) {
+    const wrap = $('sticks');
+    wrap.innerHTML = '';
+    const n = p.axes.length;
+    state.sticks.forEach((s, k) => {
+      s.x = Math.min(s.x, n - 1); s.y = Math.min(s.y, n - 1);
+      const d = document.createElement('div');
+      d.className = 'stick';
+      d.innerHTML = `
+        <svg viewBox="0 0 100 100" aria-label="${s.name} preview">
+          <rect x="5" y="5" width="90" height="90" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="50" y1="5" x2="50" y2="95" stroke="currentColor" stroke-opacity=".2"/>
+          <line x1="5" y1="50" x2="95" y2="50" stroke="currentColor" stroke-opacity=".2"/>
+          <line class="shaft" x1="50" y1="50" x2="50" y2="50" stroke="currentColor" stroke-width="2"/>
+          <circle class="dot" cx="50" cy="50" r="6" fill="currentColor"/>
+        </svg>
+        <div><b>${s.name}</b></div>
+        <div class="map">
+          <span>X</span><select data-k="${k}" data-a="x">${axisOptions(n, s.x)}</select>
+          <span>Y</span><select data-k="${k}" data-a="y">${axisOptions(n, s.y)}</select>
+          <span>Invert Y</span><input type="checkbox" data-k="${k}" data-a="invY" ${s.invY ? 'checked' : ''}>
+        </div>`;
+      wrap.appendChild(d);
+    });
+    wrap.querySelectorAll('select, input').forEach((el) => {
+      el.addEventListener('change', () => {
+        const s = state.sticks[+el.dataset.k];
+        if (el.dataset.a === 'invY') s.invY = el.checked;
+        else s[el.dataset.a] = +el.value;
+      });
+    });
+  }
+
+  function buildButtons(p) {
+    $('buttons').innerHTML = p.buttons.length
+      ? p.buttons.map((_, i) => `<span id="b${i}">${i}</span>`).join('')
+      : '<span class="muted">No buttons reported.</span>';
+  }
+
+  // Normalise to -1..1 using observed min/max (so uncalibrated ranges still fill the box)
+  function norm(i, v) {
+    const s = state.stats[i];
+    if (!s) return v;
+    const span = s.max - s.min;
+    if (span < 0.2) return v;
+    return ((v - s.min) / span) * 2 - 1;
+  }
+
+  function tick() {
+    if (state.index !== null) {
+      const p = navigator.getGamepads()[state.index];
+      if (p) render(p);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function render(p) {
+    const now = performance.now();
+    if (p.timestamp !== state.lastTs) { state.updates++; state.lastTs = p.timestamp; }
+    if (now - state.rateWindowStart >= 1000) {
+      state.rate = state.updates * 1000 / (now - state.rateWindowStart);
+      state.peak = Math.max(state.peak || 0, state.rate);
+      state.updates = 0; state.rateWindowStart = now;
+    }
+
+    // Axes
+    let biggest = 0, biggestIdx = -1;
+    p.axes.forEach((v, i) => {
+      const s = state.stats[i];
+      if (!s) return;
+      s.min = Math.min(s.min, v); s.max = Math.max(s.max, v);
+      const delta = Math.abs(v - state.prev[i]);
+      if (delta > biggest) { biggest = delta; biggestIdx = i; }
+      state.prev[i] = v;
+
+      const tr = $(`ax${i}`);
+      tr.querySelector('.v').textContent = v.toFixed(3);
+      tr.querySelector('.mn').textContent = s.min.toFixed(3);
+      tr.querySelector('.ct').textContent = s.center.toFixed(3);
+      tr.querySelector('.mx').textContent = s.max.toFixed(3);
+      const fill = tr.querySelector('.barfill');
+      const pct = (Math.max(-1, Math.min(1, v)) + 1) * 50;
+      fill.style.left = Math.min(50, pct) + '%';
+      fill.style.width = Math.abs(pct - 50) + '%';
+    });
+    if (biggest > 0.01) { state.lastMoved = biggestIdx; state.lastMovedAt = now; }
+    p.axes.forEach((_, i) => {
+      const tr = $(`ax${i}`);
+      if (tr) tr.classList.toggle('active', i === state.lastMoved && now - state.lastMovedAt < 400);
+    });
+    $('lastMoved').textContent = state.lastMoved === null
+      ? 'Last moved: — (move one stick in one direction)'
+      : `Last moved: Axis ${state.lastMoved}`;
+
+    // Stick previews
+    document.querySelectorAll('#sticks .stick').forEach((el, k) => {
+      const s = state.sticks[k];
+      const x = Math.max(-1, Math.min(1, norm(s.x, p.axes[s.x] ?? 0)));
+      let y = Math.max(-1, Math.min(1, norm(s.y, p.axes[s.y] ?? 0)));
+      // Gamepad "up" is usually negative, which matches SVG (y grows downward)
+      if (s.invY) y = -y;
+      const cx = 50 + x * 42, cy = 50 + y * 42;
+      el.querySelector('.dot').setAttribute('cx', cx);
+      el.querySelector('.dot').setAttribute('cy', cy);
+      el.querySelector('.shaft').setAttribute('x2', cx);
+      el.querySelector('.shaft').setAttribute('y2', cy);
+    });
+
+    // Buttons
+    p.buttons.forEach((b, i) => {
+      const el = $(`b${i}`);
+      if (el) el.classList.toggle('on', b.pressed || b.value > 0.5);
+    });
+
+    $('info').innerHTML =
+      `Mapping: <code>${p.mapping || 'none (generic joystick)'}</code> · ` +
+      `Report rate: <code>~${Math.round(state.rate)} Hz</code>, peak <code>${Math.round(state.peak || 0)} Hz</code> (only counts while sticks move; screen refresh caps it) · ` +
+      `Connected: <code>${p.connected}</code>`;
+  }
+
+  $('picker').addEventListener('change', (e) => select(+e.target.value));
+  $('resetBtn').addEventListener('click', () => {
+    const p = navigator.getGamepads()[state.index];
+    if (!p) return;
+    p.axes.forEach((v, i) => { state.stats[i].min = v; state.stats[i].max = v; });
+  });
+  $('centerBtn').addEventListener('click', () => {
+    const p = navigator.getGamepads()[state.index];
+    if (!p) return;
+    p.axes.forEach((v, i) => { state.stats[i].center = v; });
+  });
+  $('copyBtn').addEventListener('click', async () => {
+    const p = navigator.getGamepads()[state.index];
+    if (!p) return;
+    const report = {
+      id: p.id, mapping: p.mapping, axes: p.axes.length, buttons: p.buttons.length,
+      approxRateHz: Math.round(state.rate),
+      peakRateHz: Math.round(state.peak || 0),
+      axisStats: state.stats.map((s, i) => ({
+        axis: i, min: +s.min.toFixed(3), center: +s.center.toFixed(3), max: +s.max.toFixed(3),
+      })),
+      stickMapping: state.sticks.map((s) => ({ name: s.name, x: s.x, y: s.y, invertY: s.invY })),
+    };
+    const text = JSON.stringify(report, null, 2);
+    try { await navigator.clipboard.writeText(text); $('copyMsg').textContent = 'Copied. Paste it into the chat.'; }
+    catch { $('copyMsg').textContent = 'Copy failed; check the browser console for the report.'; console.log(text); }
+  });
+
+  window.addEventListener('gamepadconnected', refreshPicker);
+  window.addEventListener('gamepaddisconnected', refreshPicker);
+  refreshPicker();
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
